@@ -58,6 +58,12 @@ public:
     Mesh() = default;
     ~Mesh() = default;
 
+    Mesh(const Mesh&) = delete;
+    Mesh& operator=(const Mesh&) = delete;
+
+    Mesh(Mesh&&) = default;
+    Mesh& operator=(Mesh&&) = default;
+
     void init(
         Device &device,
         const std::vector<Vertex> &vertices,

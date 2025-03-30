@@ -41,6 +41,22 @@ Pipeline::Builder &Pipeline::Builder::setColorFormat(VkFormat format)
     return *this;
 }
 
+Pipeline::Builder &Pipeline::Builder::setDescriptorSetLayout(
+    VkDescriptorSetLayout layout
+)
+{
+    m_descriptorSetLayout = layout;
+    return *this;
+}
+
+Pipeline::Builder &Pipeline::Builder::addPushConstantRange(
+    VkPushConstantRange range
+)
+{
+    m_pushConstantRanges.push_back(range);
+    return *this;
+}
+
 Pipeline Pipeline::Builder::build()
 {
     VkPipeline pipeline;
@@ -100,13 +116,17 @@ Pipeline Pipeline::Builder::build()
 
     VkPipelineDynamicStateCreateInfo dynamicState{};
     dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+    dynamicState.dynamicStateCount = static_cast<u32>(dynamicStates.size());
     dynamicState.pDynamicStates = dynamicStates.data();
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
+    pipelineLayoutInfo.setLayoutCount = m_descriptorSetLayout ? 1 : 0;
+    pipelineLayoutInfo.pSetLayouts = &m_descriptorSetLayout;
+    pipelineLayoutInfo.pushConstantRangeCount = static_cast<u32>(
+        m_pushConstantRanges.size()
+    );
+    pipelineLayoutInfo.pPushConstantRanges = m_pushConstantRanges.data();
 
     VkResult res = vkCreatePipelineLayout(
         m_device.getDevice(),
@@ -207,6 +227,40 @@ void Pipeline::destroy()
 void Pipeline::bind(VkCommandBuffer cmd)
 {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+}
+
+void Pipeline::push(
+    VkCommandBuffer cmd,
+    VkShaderStageFlagBits stage,
+    VkDeviceSize size,
+    void *data
+)
+{
+    vkCmdPushConstants(
+        cmd,
+        m_pipelineLayout,
+        stage,
+        0,
+        size,
+        data
+    );
+}
+
+void Pipeline::bindDescriptorSet(
+    VkCommandBuffer cmd,
+    VkDescriptorSet descriptorSet
+)
+{
+    vkCmdBindDescriptorSets(
+        cmd,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        m_pipelineLayout,
+        0,
+        1,
+        &descriptorSet,
+        0,
+        nullptr
+    );
 }
 
 } // namespace gfx

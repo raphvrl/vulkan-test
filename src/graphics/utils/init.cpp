@@ -192,6 +192,11 @@ VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surfa
     vulkan12Features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
     vulkan12Features.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
     vulkan12Features.shaderStorageImageArrayNonUniformIndexing = VK_TRUE;
+    vulkan12Features.descriptorBindingUniformBufferUpdateAfterBind = VK_TRUE;
+    vulkan12Features.descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE;
+    vulkan12Features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+    vulkan12Features.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
+    vulkan12Features.descriptorBindingUpdateUnusedWhilePending = VK_TRUE;
     vulkan12Features.pNext = &vulkan13Features;
 
     VkPhysicalDeviceFeatures2 deviceFeatures{};

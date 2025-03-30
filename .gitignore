@@ -60,3 +60,6 @@ compile_commands.json
 vcpkg/
 vendor/
 deps/
+
+# shader cache
+*.spv

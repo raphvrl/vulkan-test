@@ -10,3 +10,6 @@
 [submodule "lib/volk"]
 	path = lib/volk
 	url = https://github.com/zeux/volk
+[submodule "lib/tinygltf"]
+	path = lib/tinygltf
+	url = https://github.com/syoyo/tinygltf.git

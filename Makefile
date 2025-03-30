@@ -49,6 +49,10 @@ GLM_DIR = $(LIB_DIR)/glm
 
 CXXFLAGS += -I$(GLM_DIR)
 
+TINYGLTF_DIR = $(LIB_DIR)/tinyglTF
+
+CXXFLAGS += -I$(TINYGLTF_DIR)
+
 VULKAN_INC = $(VULKAN_SDK)/Include
 VULKAN_LIB = "$(VULKAN_SDK)/Lib/vulkan-1.lib"
 
