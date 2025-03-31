@@ -35,6 +35,8 @@ public:
         Builder &setColorFormat(VkFormat format);
         Builder &setDescriptorSetLayout(VkDescriptorSetLayout layout);
         Builder &addPushConstantRange(VkPushConstantRange range);
+        Builder &setDepthTest(bool enable);
+        Builder &setDepthWrite(bool enable);
         
 
         Pipeline build();
@@ -51,6 +53,9 @@ public:
 
         VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;
         std::vector<VkPushConstantRange> m_pushConstantRanges;
+
+        bool m_depthTest = false;
+        bool m_depthWrite = false;
 
         std::vector<char> readFile(const std::string &filename);
         VkShaderModule createShaderModule(const std::vector<char> &code);

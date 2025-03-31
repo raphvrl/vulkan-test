@@ -9,6 +9,7 @@
 
 #include "utils/init.hpp"
 #include "swapchain.hpp"
+#include "depth_buffer.hpp"
 
 namespace gfx
 {
@@ -31,6 +32,9 @@ public:
     VkCommandBuffer beginFrame();
     void endFrame();
 
+    VkCommandBuffer beginSingleTimeCommands();
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+
     void waitIdle();
 
 public:
@@ -42,6 +46,9 @@ public:
     Swapchain &getSwapchain() { return m_swapchain; }
 
     VmaAllocator getAllocator() const { return m_allocator; }
+
+    DepthBuffer &getDepthBuffer() { return m_depthBuffer; }
+    VkFormat getDepthFormat() const { return m_depthBuffer.getFormat(); }
 
     VkQueue getGraphicsQueue() const { return m_graphicsQueue; }
     VkQueue getPresentQueue() const { return m_presentQueue; }
@@ -63,6 +70,7 @@ private:
     VkSurfaceKHR m_surface = VK_NULL_HANDLE;
     Swapchain m_swapchain;
     VmaAllocator m_allocator = VK_NULL_HANDLE;
+    DepthBuffer m_depthBuffer;
 
     vk::QueueFamilyIndices m_queueFamilyIndices;
     VkQueue m_graphicsQueue = VK_NULL_HANDLE;

@@ -57,6 +57,7 @@ void Window::destroy()
 void Window::pollEvents()
 {
     m_prevKeys = m_keys;
+    m_mouseRel = {0.0f, 0.0f};
 
     glfwPollEvents();
 }
@@ -125,7 +126,7 @@ void Window::cursorPosCallback(
     }
 
     self->m_mouseRel.x = xpos - self->m_mousePos.x;
-    self->m_mouseRel.y = self->m_mousePos.y - ypos;
+    self->m_mouseRel.y = ypos - self->m_mousePos.y;
     self->m_mousePos.x = xpos;
     self->m_mousePos.y = ypos;
 }

@@ -57,6 +57,18 @@ Pipeline::Builder &Pipeline::Builder::addPushConstantRange(
     return *this;
 }
 
+Pipeline::Builder &Pipeline::Builder::setDepthTest(bool enable)
+{
+    m_depthTest = enable;
+    return *this;
+}
+
+Pipeline::Builder &Pipeline::Builder::setDepthWrite(bool enable)
+{
+    m_depthWrite = enable;
+    return *this;
+}
+
 Pipeline Pipeline::Builder::build()
 {
     VkPipeline pipeline;
@@ -78,6 +90,7 @@ Pipeline Pipeline::Builder::build()
     renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
     renderingInfo.colorAttachmentCount = 1;
     renderingInfo.pColorAttachmentFormats = &m_colorFormat;
+    renderingInfo.depthAttachmentFormat = m_device.getDepthFormat();
 
     VkPipelineViewportStateCreateInfo viewportState{};
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -90,7 +103,7 @@ Pipeline Pipeline::Builder::build()
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.cullMode = VK_CULL_MODE_NONE;
     rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
@@ -108,6 +121,16 @@ Pipeline Pipeline::Builder::build()
     colorBlending.logicOpEnable = VK_FALSE;
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &colorBlendAttachment;
+
+    VkPipelineDepthStencilStateCreateInfo depthStencil{};
+    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depthStencil.depthTestEnable = m_depthTest ? VK_TRUE : VK_FALSE;
+    depthStencil.depthWriteEnable = m_depthWrite ? VK_TRUE : VK_FALSE;
+    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    depthStencil.depthBoundsTestEnable = VK_FALSE;
+    depthStencil.stencilTestEnable = VK_FALSE;
+    depthStencil.front = {};
+    depthStencil.back = {};
 
     std::vector<VkDynamicState> dynamicStates = {
         VK_DYNAMIC_STATE_VIEWPORT,
@@ -147,8 +170,8 @@ Pipeline Pipeline::Builder::build()
     pipelineInfo.pViewportState = &viewportState;
     pipelineInfo.pRasterizationState = &rasterizer;
     pipelineInfo.pMultisampleState = &multisampling;
-    pipelineInfo.pDepthStencilState = nullptr;
     pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.layout = pipelineLayout;
     pipelineInfo.renderPass = nullptr;

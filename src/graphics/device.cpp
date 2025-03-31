@@ -42,10 +42,12 @@ void Device::init(
     }
 
     m_allocator = vk::createAllocator(m_instance, m_device, m_physicalDevice);
+    m_depthBuffer.init(*this, width, height);
 }
 
 void Device::destroy()
 {
+    m_depthBuffer.destroy();
     vmaDestroyAllocator(m_allocator);
 
     for (auto frame : m_frames) {
@@ -84,7 +86,7 @@ VkCommandBuffer Device::beginFrame()
     VkResult res = vkBeginCommandBuffer(frame.commandBuffer, &beginInfo);
     vk::check(res, "Failed to begin command buffer");
 
-    VkImageMemoryBarrier2 imageBarrierToRenderTarget{};
+    VkImageMemoryBarrier2 imageBarrierToRenderTarget = {};
     imageBarrierToRenderTarget.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
     imageBarrierToRenderTarget.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
     imageBarrierToRenderTarget.srcAccessMask = 0;
@@ -99,14 +101,44 @@ VkCommandBuffer Device::beginFrame()
     imageBarrierToRenderTarget.subresourceRange.baseArrayLayer = 0;
     imageBarrierToRenderTarget.subresourceRange.layerCount = 1;
 
-    VkDependencyInfoKHR dependencyInfo{};
+    VkRenderingAttachmentInfoKHR depthAttachment = {};
+    depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+    depthAttachment.imageView = m_depthBuffer.getImageView();
+    depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.clearValue.depthStencil = {1.0f, 0};
+
+    VkImageMemoryBarrier2 depthBarrier = {};
+    depthBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+    depthBarrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+    depthBarrier.srcAccessMask = 0;
+    depthBarrier.dstStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | 
+                                VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+    depthBarrier.dstAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | 
+                                VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    depthBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depthBarrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    depthBarrier.image = m_depthBuffer.getImage();
+    depthBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    depthBarrier.subresourceRange.baseMipLevel = 0;
+    depthBarrier.subresourceRange.levelCount = 1;
+    depthBarrier.subresourceRange.baseArrayLayer = 0;
+    depthBarrier.subresourceRange.layerCount = 1;
+
+    VkDependencyInfoKHR dependencyInfo = {};
     dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-    dependencyInfo.imageMemoryBarrierCount = 1;
-    dependencyInfo.pImageMemoryBarriers = &imageBarrierToRenderTarget;
+    std::array<VkImageMemoryBarrier2, 2> barriers = {
+        imageBarrierToRenderTarget, 
+        depthBarrier
+    };
+
+    dependencyInfo.imageMemoryBarrierCount = static_cast<u32>(barriers.size());
+    dependencyInfo.pImageMemoryBarriers = barriers.data();
 
     vkCmdPipelineBarrier2(frame.commandBuffer, &dependencyInfo);
 
-    VkRenderingAttachmentInfoKHR colorAttachment{};
+    VkRenderingAttachmentInfoKHR colorAttachment = {};
     colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
     colorAttachment.imageView = m_swapchain.getImageView(imageIndex);
     colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -114,13 +146,14 @@ VkCommandBuffer Device::beginFrame()
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     colorAttachment.clearValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
 
-    VkRenderingInfoKHR renderingInfo{};
+    VkRenderingInfoKHR renderingInfo = {};
     renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
     renderingInfo.renderArea.offset = {0, 0};
     renderingInfo.renderArea.extent = m_swapchain.getExtent();
     renderingInfo.layerCount = 1;
     renderingInfo.colorAttachmentCount = 1;
     renderingInfo.pColorAttachments = &colorAttachment;
+    renderingInfo.pDepthAttachment = &depthAttachment;
 
     vkCmdBeginRendering(frame.commandBuffer, &renderingInfo);
 
@@ -188,6 +221,57 @@ void Device::endFrame()
     m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
+VkCommandBuffer Device::beginSingleTimeCommands()
+{
+    auto &frame = m_frames[m_currentFrame];
+
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = frame.commandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer;
+    VkResult res = vkAllocateCommandBuffers(
+        m_device,
+        &allocInfo,
+        &commandBuffer
+    );
+
+    vk::check(res, "Failed to allocate command buffer for single time use");
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    res = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+    vk::check(res, "Failed to begin single time command buffer");
+
+    return commandBuffer;
+}
+
+void Device::endSingleTimeCommands(VkCommandBuffer commandBuffer)
+{
+    VkResult res = vkEndCommandBuffer(commandBuffer);
+    vk::check(res, "Failed to end single time command buffer");
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    res = vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vk::check(res, "Failed to submit single time command buffer");
+    vkQueueWaitIdle(m_graphicsQueue);
+
+    vkFreeCommandBuffers(
+        m_device,
+        m_frames[m_currentFrame].commandPool,
+        1,
+        &commandBuffer
+    );
+}
+
 void Device::waitIdle()
 {
     vkDeviceWaitIdle(m_device);
@@ -206,6 +290,7 @@ void Device::recreateSwapchain()
     }
 
     m_swapchain.recreate(width, height);
+    m_depthBuffer.resize(width, height);
 }
 
 } // namespace gfx

@@ -23,6 +23,9 @@ public:
     void setUp(const glm::vec3 &up) { m_up = up; }
     void setRight(const glm::vec3 &right) { m_right = right; }
 
+    void setYaw(f32 yaw) { m_yaw = yaw; }
+    void setPitch(f32 pitch) { m_pitch = pitch; }
+
     void setFov(f32 fov) { m_fov = fov; }
     void setAspect(f32 aspect) { m_aspect = aspect; }
     void setNearPlane(f32 value) { m_near = value; }
@@ -33,6 +36,9 @@ public:
     const glm::vec3 &getFront() const { return m_front; }
     const glm::vec3 &getUp() const { return m_up; }
     const glm::vec3 &getRight() const { return m_right; }
+
+    f32 getYaw() const { return m_yaw; }
+    f32 getPitch() const { return m_pitch; }
 
     const glm::mat4 &getView() const { return m_view; }
 
@@ -49,6 +55,11 @@ private:
     glm::vec3 m_front;
     glm::vec3 m_up;
     glm::vec3 m_right;
+
+    glm::vec3 m_worldUp;
+
+    f32 m_yaw;
+    f32 m_pitch;
 
     glm::mat4 m_view;
 

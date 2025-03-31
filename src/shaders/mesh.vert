@@ -11,13 +11,19 @@ layout(set = 0, binding = 0) uniform CamUniforms {
 } camUBO[];
 
 layout(push_constant) uniform PushConstants {
+    mat4 model;
     uint camUBOIndex;
 } pc;
 
+layout(location = 0) out vec3 fragColor;
+
 void main()
 {
-    mat4 view = camUBO[pc.camUBOIndex].view;
-    mat4 proj = camUBO[pc.camUBOIndex].proj;
+    mat4 view = camUBO[0].view;
+    mat4 proj = camUBO[0].proj;
+    mat4 model = pc.model;
 
-    gl_Position = proj * view * vec4(inPos, 1.0);
+    gl_Position = proj * view * model * vec4(inPos, 1.0);
+
+    fragColor = inNormal * 0.5 + 0.5;
 }

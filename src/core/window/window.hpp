@@ -63,6 +63,9 @@ public:
         return static_cast<f32>(m_width) / static_cast<f32>(m_height);
     }
 
+    
+    f32 getTime() const { return static_cast<f32>(glfwGetTime()); }
+
 private:
     GLFWwindow *m_window = nullptr;
     void *m_nativeWindow = nullptr;
