@@ -75,6 +75,10 @@ public:
     void bind(VkCommandBuffer cmd) const;
     void draw(VkCommandBuffer cmd) const;
 
+public:
+    void setTextureID(u32 textureID) { m_textureID = textureID; }
+    u32 getTextureID() const { return m_textureID; }
+
 private:
     Device *m_device = nullptr;
 
@@ -84,6 +88,7 @@ private:
     u32 m_vertexCount = 0;
     u32 m_indexCount = 0;
 
+    u32 m_textureID = 0;
 };
 
 } // namespace gfx

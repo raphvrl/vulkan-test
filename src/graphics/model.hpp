@@ -6,6 +6,7 @@
 
 #include "device.hpp"
 #include "mesh.hpp"
+#include "image.hpp"
 #include "bindless_manager.hpp"
 
 namespace gfx
@@ -32,9 +33,18 @@ private:
     Device *m_device = nullptr;
     BindlessManager *m_bindlessManager = nullptr;
 
-    std::vector<std::unique_ptr<Mesh>> m_meshes;
+    std::vector<Mesh> m_meshes;
+    std::vector<Image> m_textures;
 
-    void processMeshes(const tinygltf::Model &gltfModel);
+    void processMeshes(
+        const tinygltf::Model &gltfModel,
+        const std::vector<u32> &textureIDs
+    );
+
+    void processTextures(
+        const tinygltf::Model &gltfModel,
+        std::vector<u32> &textureIDs
+    );
 
 };
 

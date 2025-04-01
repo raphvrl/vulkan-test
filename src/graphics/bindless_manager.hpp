@@ -10,6 +10,7 @@
 #include "core/types.hpp"
 #include "device.hpp"
 #include "buffer.hpp"
+#include "image.hpp"
 
 namespace gfx
 {
@@ -21,7 +22,8 @@ public:
     enum class ResourceType
     {
         UBO,
-        SSBO
+        SSBO,
+        TEXTURE
     };
 
     BindlessManager() = default;
@@ -40,6 +42,11 @@ public:
         const Buffer &buffer,
         VkDeviceSize offset = 0,
         VkDeviceSize range = 0
+    );
+
+    u32 addTexture(
+        const Image &image,
+        VkSampler sampler = VK_NULL_HANDLE
     );
 
     void removeResource(u32 id);
@@ -63,9 +70,17 @@ private:
         u32 binding;
         u32 arrayIndex;
 
-        VkBuffer buffer = VK_NULL_HANDLE;
-        VkDeviceSize offset = 0;
-        VkDeviceSize range = 0;
+        union {
+            struct {
+                VkBuffer buffer;
+                VkDeviceSize offset;
+                VkDeviceSize range;
+            };
+            struct {
+                VkImageView imageView;
+                VkSampler sampler;
+            };
+        };
 
         bool isDirty = false;
         bool isUsed = false;
@@ -77,12 +92,15 @@ private:
 
     u32 m_nextUboIndex = 0;
     u32 m_nextSsboIndex = 0;
+    u32 m_nextTextureIndex = 0;
 
-    static constexpr u32 MAX_UBOS = 256;
-    static constexpr u32 MAX_SSBOS = 256;
+    static constexpr u32 MAX_UBOS = 64;
+    static constexpr u32 MAX_SSBOS = 64;
+    static constexpr u32 MAX_TEXTURES = 256;
 
     static constexpr u32 UBO_BINDING = 0;
     static constexpr u32 SSBO_BINDING = 1;
+    static constexpr u32 TEXTURE_BINDING = 2;
 
     u32 addResourceInternal(
         ResourceType type,

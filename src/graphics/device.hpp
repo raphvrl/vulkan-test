@@ -35,6 +35,13 @@ public:
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 
+    VkSampler createSampler(
+        VkFilter magFilter,
+        VkFilter minFilter,
+        VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        f32 maxAnisotropy = 1.0f
+    );
+
     void waitIdle();
 
 public:
@@ -49,6 +56,8 @@ public:
 
     DepthBuffer &getDepthBuffer() { return m_depthBuffer; }
     VkFormat getDepthFormat() const { return m_depthBuffer.getFormat(); }
+
+    VkSampler getDefaultSampler() const { return m_defaultSampler; }
 
     VkQueue getGraphicsQueue() const { return m_graphicsQueue; }
     VkQueue getPresentQueue() const { return m_presentQueue; }
@@ -71,6 +80,7 @@ private:
     Swapchain m_swapchain;
     VmaAllocator m_allocator = VK_NULL_HANDLE;
     DepthBuffer m_depthBuffer;
+    VkSampler m_defaultSampler = VK_NULL_HANDLE;
 
     vk::QueueFamilyIndices m_queueFamilyIndices;
     VkQueue m_graphicsQueue = VK_NULL_HANDLE;

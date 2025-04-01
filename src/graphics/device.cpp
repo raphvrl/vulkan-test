@@ -43,10 +43,18 @@ void Device::init(
 
     m_allocator = vk::createAllocator(m_instance, m_device, m_physicalDevice);
     m_depthBuffer.init(*this, width, height);
+
+    m_defaultSampler = createSampler(
+        VK_FILTER_LINEAR,
+        VK_FILTER_LINEAR,
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER
+    );
 }
 
 void Device::destroy()
 {
+    vkDestroySampler(m_device, m_defaultSampler, nullptr);
+
     m_depthBuffer.destroy();
     vmaDestroyAllocator(m_allocator);
 
@@ -270,6 +278,40 @@ void Device::endSingleTimeCommands(VkCommandBuffer commandBuffer)
         1,
         &commandBuffer
     );
+}
+
+VkSampler Device::createSampler(
+    VkFilter magFilter,
+    VkFilter minFilter,
+    VkSamplerAddressMode addressMode,
+    f32 maxAnisotropy
+)
+{
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(m_physicalDevice, &properties);
+
+    VkSamplerCreateInfo samplerInfo{};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = magFilter;
+    samplerInfo.minFilter = minFilter;
+    samplerInfo.addressModeU = addressMode;
+    samplerInfo.addressModeV = addressMode;
+    samplerInfo.addressModeW = addressMode;
+    samplerInfo.anisotropyEnable = VK_TRUE;
+    samplerInfo.maxAnisotropy = maxAnisotropy > 0.0f ? 
+        maxAnisotropy : properties.limits.maxSamplerAnisotropy;
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    samplerInfo.compareEnable = VK_FALSE;
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+
+    VkSampler sampler;
+    VkResult res = vkCreateSampler(m_device, &samplerInfo, nullptr, &sampler);
+    
+    vk::check(res, "Failed to create texture sampler");
+
+    return sampler;
 }
 
 void Device::waitIdle()

@@ -32,7 +32,7 @@ int main()
 
     gfx::ModelManager modelManager;
     modelManager.init(device, bindlessManager);
-    u32 cubeID = modelManager.loadModel("assets/models/monkey.gltf");
+    u32 cubeID = modelManager.loadModel("assets/models/bingus.gltf");
 
     gfx::Camera camera;
     camera.setPosition({0.0f, 0.0f, 10.0f});
@@ -126,8 +126,16 @@ int main()
             mouseRel.x *= sensitivity;
             mouseRel.y *= sensitivity;
 
-            camera.setYaw(camera.getYaw() + mouseRel.x);
-            camera.setPitch(camera.getPitch() - mouseRel.y);
+            f32 yaw = camera.getYaw();
+            f32 pitch = camera.getPitch();
+
+            yaw += mouseRel.x;
+            pitch -= mouseRel.y;
+
+            pitch = std::clamp(pitch, -89.0f, 89.0f);
+
+            camera.setYaw(yaw);
+            camera.setPitch(pitch);
         }
 
         camera.setAspect(window.getAspect());

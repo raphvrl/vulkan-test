@@ -111,6 +111,8 @@ private:
         VmaMemoryUsage memoryUsage
     );
 
+    void createImageView(VkImageAspectFlags aspectFlags);
+
 };
 
 } // namespace gfx

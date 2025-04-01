@@ -32,27 +32,39 @@ void Model::load(
         std::cerr << "GLTF Error: " << err << std::endl;
     }
 
-    processMeshes(gltfModel);
+    std::vector<u32> textureIDs;
+    processTextures(gltfModel, textureIDs);
+
+    processMeshes(gltfModel, textureIDs);
 }
 
 void Model::destroy()
 {
     for (auto &mesh : m_meshes) {
-        if (mesh) {
-            mesh->destroy();
-        }
+        mesh.destroy();
     }
+
+    m_meshes.clear();
+
+    for (auto &texture : m_textures) {
+        texture.destroy();
+    }
+
+    m_textures.clear();
 }
 
 void Model::draw(VkCommandBuffer cmd)
 {
     for (auto &mesh : m_meshes) {
-        mesh->bind(cmd);
-        mesh->draw(cmd);
+        mesh.bind(cmd);
+        mesh.draw(cmd);
     }
 }
 
-void Model::processMeshes(const tinygltf::Model &gltfModel)
+void Model::processMeshes(
+    const tinygltf::Model &gltfModel,
+    const std::vector<u32> &textureIDs
+)
 {
     for (const auto &mesh : gltfModel.meshes) {
         for (const auto &primitive : mesh.primitives) {
@@ -190,10 +202,81 @@ void Model::processMeshes(const tinygltf::Model &gltfModel)
                 }
             }
 
-            auto mesh = std::make_unique<Mesh>();
-            mesh->init(*m_device, vertices, indices);
+            u32 textureID = 0;
+            if (
+                primitive.material >= 0 &&
+                primitive.material < static_cast<int>(gltfModel.materials.size())
+            ) {
+                const auto& material = gltfModel.materials[primitive.material];
+                if (material.pbrMetallicRoughness.baseColorTexture.index >= 0) {
+                    int texIndex = material.pbrMetallicRoughness.baseColorTexture.index;
+                    textureID = textureIDs[texIndex + 1];
+                }
+            }
+
+            Mesh mesh;
+            mesh.init(*m_device, vertices, indices);
             m_meshes.push_back(std::move(mesh));
+            m_meshes.back().setTextureID(textureID);
         }
+    }
+}
+
+void Model::processTextures(
+    const tinygltf::Model &gltfModel,
+    std::vector<u32> &textureIDs
+)
+{
+    textureIDs.resize(gltfModel.textures.size() + 1, 0);
+
+    Image defaultImage;
+    u32 whitePixel = 0xFFFFFFFF;
+    defaultImage.init(
+        *m_device,
+        &whitePixel,
+        1,
+        1,
+        VK_FORMAT_R8G8B8A8_UNORM
+    );
+
+    textureIDs[0] = m_bindlessManager->addTexture(defaultImage);
+    m_textures.push_back(std::move(defaultImage));
+
+    for (usize i = 0; i < gltfModel.textures.size(); i++) {
+        const tinygltf::Texture &gltfTexture = gltfModel.textures[i];
+        
+        if (
+            gltfTexture.source < 0 ||
+            gltfTexture.source >= static_cast<int>(gltfModel.images.size())
+        ) {
+            throw std::runtime_error("Invalid texture source index.");
+        }
+
+        const tinygltf::Image &image = gltfModel.images[gltfTexture.source];
+        Image textureImage;
+
+        if (image.component == 4) {
+            textureImage.init(
+                *m_device,
+                image.image.data(),
+                image.width,
+                image.height,
+                VK_FORMAT_R8G8B8A8_UNORM
+            );
+        } else if (image.component == 3) {
+            textureImage.init(
+                *m_device,
+                image.image.data(),
+                image.width,
+                image.height,
+                VK_FORMAT_R8G8B8_UNORM
+            );
+        } else {
+            throw std::runtime_error("Unsupported image format.");
+        }
+
+        textureIDs[i + 1] = m_bindlessManager->addTexture(textureImage);
+        m_textures.push_back(std::move(textureImage));
     }
 }
 

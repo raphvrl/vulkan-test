@@ -15,7 +15,7 @@ layout(push_constant) uniform PushConstants {
     uint camUBOIndex;
 } pc;
 
-layout(location = 0) out vec3 fragColor;
+layout(location = 0) out vec2 fragUV;
 
 void main()
 {
@@ -24,6 +24,5 @@ void main()
     mat4 model = pc.model;
 
     gl_Position = proj * view * model * vec4(inPos, 1.0);
-
-    fragColor = inNormal * 0.5 + 0.5;
+    fragUV = inUV;
 }
