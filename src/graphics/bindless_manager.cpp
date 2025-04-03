@@ -1,4 +1,7 @@
 #include "bindless_manager.hpp"
+#include "device.hpp"
+#include "buffer.hpp"
+#include "image.hpp"
 
 namespace gfx
 {

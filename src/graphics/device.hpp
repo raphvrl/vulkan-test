@@ -10,6 +10,7 @@
 #include "utils/init.hpp"
 #include "swapchain.hpp"
 #include "depth_buffer.hpp"
+#include "bindless_manager.hpp"
 
 namespace gfx
 {
@@ -59,6 +60,8 @@ public:
 
     VkSampler getDefaultSampler() const { return m_defaultSampler; }
 
+    BindlessManager &getBindlessManager() { return m_bindlessManager; }
+
     VkQueue getGraphicsQueue() const { return m_graphicsQueue; }
     VkQueue getPresentQueue() const { return m_presentQueue; }
 
@@ -80,7 +83,10 @@ private:
     Swapchain m_swapchain;
     VmaAllocator m_allocator = VK_NULL_HANDLE;
     DepthBuffer m_depthBuffer;
+
     VkSampler m_defaultSampler = VK_NULL_HANDLE;
+
+    BindlessManager m_bindlessManager;
 
     vk::QueueFamilyIndices m_queueFamilyIndices;
     VkQueue m_graphicsQueue = VK_NULL_HANDLE;

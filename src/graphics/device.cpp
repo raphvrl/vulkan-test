@@ -49,10 +49,13 @@ void Device::init(
         VK_FILTER_LINEAR,
         VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER
     );
+
+    m_bindlessManager.init(*this);
 }
 
 void Device::destroy()
 {
+    m_bindlessManager.destroy();
     vkDestroySampler(m_device, m_defaultSampler, nullptr);
 
     m_depthBuffer.destroy();

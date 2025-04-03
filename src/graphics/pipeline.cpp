@@ -41,14 +41,6 @@ Pipeline::Builder &Pipeline::Builder::setColorFormat(VkFormat format)
     return *this;
 }
 
-Pipeline::Builder &Pipeline::Builder::setDescriptorSetLayout(
-    VkDescriptorSetLayout layout
-)
-{
-    m_descriptorSetLayout = layout;
-    return *this;
-}
-
 Pipeline::Builder &Pipeline::Builder::addPushConstantRange(
     VkPushConstantRange range
 )
@@ -142,10 +134,13 @@ Pipeline Pipeline::Builder::build()
     dynamicState.dynamicStateCount = static_cast<u32>(dynamicStates.size());
     dynamicState.pDynamicStates = dynamicStates.data();
 
+    auto &bindlessManager = m_device.getBindlessManager();
+    auto descriptorSetLayout = bindlessManager.getDescriptorSetLayout();
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = m_descriptorSetLayout ? 1 : 0;
-    pipelineLayoutInfo.pSetLayouts = &m_descriptorSetLayout;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
     pipelineLayoutInfo.pushConstantRangeCount = static_cast<u32>(
         m_pushConstantRanges.size()
     );
@@ -198,6 +193,7 @@ Pipeline Pipeline::Builder::build()
     pipelineObj.m_device = &m_device;
     pipelineObj.m_pipeline = pipeline;
     pipelineObj.m_pipelineLayout = pipelineLayout;
+    pipelineObj.m_descriptorSet = bindlessManager.getDescriptorSet();
 
     return pipelineObj;
 }
@@ -250,6 +246,17 @@ void Pipeline::destroy()
 void Pipeline::bind(VkCommandBuffer cmd)
 {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+
+    vkCmdBindDescriptorSets(
+        cmd,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        m_pipelineLayout,
+        0,
+        1,
+        &m_descriptorSet,
+        0,
+        nullptr
+    );
 }
 
 void Pipeline::push(
@@ -266,23 +273,6 @@ void Pipeline::push(
         0,
         size,
         data
-    );
-}
-
-void Pipeline::bindDescriptorSet(
-    VkCommandBuffer cmd,
-    VkDescriptorSet descriptorSet
-)
-{
-    vkCmdBindDescriptorSets(
-        cmd,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        m_pipelineLayout,
-        0,
-        1,
-        &descriptorSet,
-        0,
-        nullptr
     );
 }
 

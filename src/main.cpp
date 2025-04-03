@@ -27,8 +27,7 @@ int main()
     gfx::Device device;
     device.init(window, "Vulkan", {1, 0, 0});
 
-    gfx::BindlessManager bindlessManager;
-    bindlessManager.init(device);
+    auto &bindlessManager = device.getBindlessManager();
 
     gfx::ModelManager modelManager;
     modelManager.init(device, bindlessManager);
@@ -61,7 +60,6 @@ int main()
             .attribute = attributes.data(),
             .attributeCount = static_cast<u32>(attributes.size())
         })
-        .setDescriptorSetLayout(bindlessManager.getDescriptorSetLayout())
         .addPushConstantRange({
             .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
             .offset = 0,
@@ -154,7 +152,6 @@ int main()
         }
 
         pipeline.bind(cmd);
-        pipeline.bindDescriptorSet(cmd, bindlessManager.getDescriptorSet());
 
         PushConstant pc = {
             .model = glm::mat4(1.0f),
@@ -177,7 +174,6 @@ int main()
 
     cameraBuffer.destroy();
     modelManager.destroy();
-    bindlessManager.destroy();
     pipeline.destroy();
     device.destroy();
     window.destroy();

@@ -33,7 +33,6 @@ public:
         Builder &setShader(const std::string &path, VkShaderStageFlagBits stage);
         Builder &setVertexInput(const VertexInput &vertexInput);
         Builder &setColorFormat(VkFormat format);
-        Builder &setDescriptorSetLayout(VkDescriptorSetLayout layout);
         Builder &addPushConstantRange(VkPushConstantRange range);
         Builder &setDepthTest(bool enable);
         Builder &setDepthWrite(bool enable);
@@ -51,7 +50,6 @@ public:
 
         VkFormat m_colorFormat = VK_FORMAT_B8G8R8A8_UNORM;
 
-        VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;
         std::vector<VkPushConstantRange> m_pushConstantRanges;
 
         bool m_depthTest = false;
@@ -74,17 +72,13 @@ public:
         void *data
     );
 
-    void bindDescriptorSet(
-        VkCommandBuffer cmd,
-        VkDescriptorSet descriptorSet
-    );
-
 private:
     friend class Builder;
 
     Device *m_device;
     VkPipeline m_pipeline;
     VkPipelineLayout m_pipelineLayout;
+    VkDescriptorSet m_descriptorSet;
 
 };
 
